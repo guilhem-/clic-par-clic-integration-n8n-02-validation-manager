@@ -1,0 +1,303 @@
+{
+  "name": "Validation des congés",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demande-conge",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9bcb7e6e-5967-44cc-82f2-1474f4091753",
+      "name": "Demande reçue",
+      "webhookId": "169c0e11-9d65-4919-bcdf-c8c4a08cd0c1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "${ID_JETON_INTERNE}",
+          "name": "Jeton interne"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "${ID_TABLE}",
+          "mode": "id",
+          "cachedResultName": "Congés"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $json.body.email }}",
+            "debut": "={{ $json.body.debut }}",
+            "fin": "={{ $json.body.fin }}",
+            "jours": "={{ $json.body.jours }}",
+            "statut": "En attente"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "debut",
+              "displayName": "debut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "fin",
+              "displayName": "fin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jours",
+              "displayName": "jours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "statut",
+              "displayName": "statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        0
+      ],
+      "id": "4d77e9e2-d524-4bd2-a86d-196c316db3b9",
+      "name": "Enregistrer la demande"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "${OWUI_INTERNE}/api/v1/channels/${ID_CANAL}/messages/post",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: 'Nouvelle demande de congé de **' + $json.email + '** : ' + $json.jours + ' jours, du ' + $json.debut + ' au ' + $json.fin + '. → [Valider ou refuser](' + $execution.resumeFormUrl + ')' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "060985f9-57fe-44a7-869d-e3c974613e2a",
+      "name": "Prévenir le manager",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "${ID_ROBOT}",
+          "name": "Robot Open WebUI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Demande de congé",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Décision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Validé"
+                  },
+                  {
+                    "option": "Refusé"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        752,
+        0
+      ],
+      "id": "c5f10a5b-0157-4091-b547-fc4849a3564f",
+      "name": "Décision du manager",
+      "webhookId": "60144f26-7c76-4993-856c-91c2a3a4c295"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "${ID_TABLE}",
+          "mode": "id",
+          "cachedResultName": "Congés"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Enregistrer la demande').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "statut": "={{ $json['Décision'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "debut",
+              "displayName": "debut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "fin",
+              "displayName": "fin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jours",
+              "displayName": "jours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "statut",
+              "displayName": "statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        0
+      ],
+      "id": "e0c72a1d-cdcc-4da3-b130-8acdc462c8af",
+      "name": "Mettre à jour le statut"
+    }
+  ],
+  "connections": {
+    "Demande reçue": {
+      "main": [
+        [
+          {
+            "node": "Enregistrer la demande",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enregistrer la demande": {
+      "main": [
+        [
+          {
+            "node": "Prévenir le manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prévenir le manager": {
+      "main": [
+        [
+          {
+            "node": "Décision du manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Décision du manager": {
+      "main": [
+        [
+          {
+            "node": "Mettre à jour le statut",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all"
+  }
+}

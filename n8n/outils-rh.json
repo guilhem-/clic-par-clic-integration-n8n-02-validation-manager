@@ -1,0 +1,128 @@
+{
+  "name": "Outils RH pour Open WebUI",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "bearerAuth",
+        "path": "conges"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "69790530-7900-4536-bb42-77503330cf30",
+      "name": "MCP Server Trigger",
+      "webhookId": "0c4446cf-a254-40d4-acec-ef0426b54b4e",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "${ID_IDENTIFIANT}",
+          "name": "Jeton Open WebUI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Liste les congés déjà posés par l'utilisateur connecté : dates, nombre de jours, statut.",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "${ID_TABLE}",
+          "mode": "id",
+          "cachedResultName": "Congés"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "keyValue": "={{ $json.headers['x-utilisateur-email'] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "3a47c9ae-13b8-4483-bde1-2447edc1496d",
+      "name": "consulter_conges"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Transmet une demande de congé de l'utilisateur connecté à son manager, qui la validera. Dates au format AAAA-MM-JJ, nombre de jours ouvrés.",
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/demande-conge",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json.headers['x-utilisateur-email'] }}"
+            },
+            {
+              "name": "debut",
+              "value": "={{ $fromAI('debut', 'Premier jour, AAAA-MM-JJ') }}"
+            },
+            {
+              "name": "fin",
+              "value": "={{ $fromAI('fin', 'Dernier jour, AAAA-MM-JJ') }}"
+            },
+            {
+              "name": "jours",
+              "value": "={{ $fromAI('jours', 'Nombre de jours ouvrés') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.5,
+      "position": [
+        96,
+        208
+      ],
+      "id": "c58957a3-29ed-4301-93b6-de2f82e1f66c",
+      "name": "poser_conge",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "${ID_JETON_INTERNE}",
+          "name": "Jeton interne"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "consulter_conges": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "poser_conge": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all"
+  }
+}
